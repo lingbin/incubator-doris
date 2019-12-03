@@ -24,8 +24,9 @@
 #include "olap/row.h"
 #include "olap/schema.h"
 #include "runtime/tuple.h"
-#include "util/runtime_profile.h"
 #include "util/debug_util.h"
+#include "util/logging.h"
+#include "util/runtime_profile.h"
 
 namespace doris {
 
@@ -43,9 +44,9 @@ MemTable::MemTable(int64_t tablet_id, Schema* schema, const TabletSchema* tablet
 
     _schema_size = _schema->schema_size();
     _mem_tracker.reset(new MemTracker(-1, "memtable", mem_tracker));
-    _mem_pool.reset(new MemPool(_mem_tracker.get()));
-    _tuple_buf = _mem_pool->allocate(_schema_size);
-    _skip_list = new Table(_row_comparator, _mem_pool.get());
+    _tmp_mem_pool.reset(new MemPool(_mem_tracker.get()));
+    _table_mem_pool.reset(new MemPool(_mem_tracker.get()));
+    _skip_list = new Table(_row_comparator, _table_mem_pool.get(), _keys_type == KeysType::DUP_KEYS);
 }
 
 MemTable::~MemTable() {
@@ -61,26 +62,49 @@ int MemTable::RowCursorComparator::operator()(const char* left, const char* righ
     return compare_row(lhs_row, rhs_row);
 }
 
-size_t MemTable::memory_usage() {
-    return _mem_pool->mem_tracker()->consumption();
+void MemTable::insert(const Tuple* tuple) {
+    bool overwritten = false;
+    if (_keys_type == KeysType::DUP_KEYS) {
+        // Will insert directly, so use memory from _table_mem_pool
+        _tuple_buf = _table_mem_pool->allocate(_schema_size);
+        ContiguousRow row(_schema, _tuple_buf);
+        _tuple_to_row(tuple, &row, _table_mem_pool.get());
+        _skip_list->Insert((char*)_tuple_buf, &overwritten);
+        DCHECK(!overwritten) << "Duplicate key model meet overwrite in SkipList";
+        return;
+    }
+
+    _tuple_buf = _tmp_mem_pool->allocate(_schema_size);
+    ContiguousRow row(_schema, _tuple_buf);
+    _tuple_to_row(tuple, &row, _table_mem_pool.get());
+
+    // TODO(lingbin): Remove redundant contain check
+    if (_skip_list->Contains((char*)_tuple_buf)) {
+        // Will aggregate, use memory from _tmp_mem_pool
+        _skip_list->Insert((char*)_tuple_buf, &overwritten);
+        DCHECK(overwritten) << "Does not meet duplicated key in SkipList";
+    } else {
+        // Will insert directly, so use memory from _table_mem_pool
+        _tuple_buf = _table_mem_pool->allocate(_schema_size);
+        ContiguousRow dst_row(_schema, _tuple_buf);
+        copy_row(&dst_row, row, _table_mem_pool.get());
+        _skip_list->Insert((char*)_tuple_buf, &overwritten);
+        DCHECK(!overwritten) << "Meet unexpected duplicated key in SkipList";
+    }
+
+    // Make MemPool to be reusable, but does not free its memory
+    _tmp_mem_pool->clear();
 }
 
-void MemTable::insert(Tuple* tuple) {
-    ContiguousRow row(_schema, _tuple_buf);
-
+void MemTable::_tuple_to_row(const Tuple* tuple, ContiguousRow* row, MemPool* mem_pool) {
     for (size_t i = 0; i < _slot_descs->size(); ++i) {
-        auto cell = row.cell(i);
+        auto cell = row->cell(i);
         const SlotDescriptor* slot = (*_slot_descs)[i];
 
         bool is_null = tuple->is_null(slot->null_indicator_offset());
-        void* value = tuple->get_slot(slot->tuple_offset());
-        _schema->column(i)->consume(&cell, (const char *)value, is_null, _mem_pool.get(), &_agg_object_pool);
-    }
-
-    bool overwritten = false;
-    _skip_list->Insert((char*)_tuple_buf, &overwritten, _keys_type);
-    if (!overwritten) {
-        _tuple_buf = _mem_pool->allocate(_schema_size);
+        const void* value = tuple->get_slot(slot->tuple_offset());
+        _schema->column(i)->consume(
+                &cell, (const char*)value, is_null, _tmp_mem_pool.get(), &_agg_object_pool);
     }
 }
 
@@ -92,7 +116,7 @@ OLAPStatus MemTable::flush() {
         for (it.SeekToFirst(); it.Valid(); it.Next()) {
             char* row = (char*)it.key();
             ContiguousRow dst_row(_schema, row);
-            agg_finalize_row(&dst_row, _mem_pool.get());
+            agg_finalize_row(&dst_row, _table_mem_pool.get());
             RETURN_NOT_OK(_rowset_writer->add_row(dst_row));
         }
         RETURN_NOT_OK(_rowset_writer->flush());

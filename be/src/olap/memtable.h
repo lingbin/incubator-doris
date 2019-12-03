@@ -33,13 +33,18 @@ public:
              const std::vector<SlotDescriptor*>* slot_descs, TupleDescriptor* tuple_desc,
              KeysType keys_type, RowsetWriter* rowset_writer, MemTracker* mem_tracker);
     ~MemTable();
+
     int64_t tablet_id() { return _tablet_id; }
-    size_t memory_usage();
-    void insert(Tuple* tuple);
+    size_t memory_usage() {
+        return _mem_tracker->consumption();
+    }
+    void insert(const Tuple* tuple);
     OLAPStatus flush();
     OLAPStatus close();
 
 private:
+    void _tuple_to_row(const Tuple* tuple, ContiguousRow* row, MemPool* mem_pool);
+
     int64_t _tablet_id;
     Schema* _schema;
     const TabletSchema* _tablet_schema;
@@ -56,7 +61,10 @@ private:
 
     RowCursorComparator _row_comparator;
     std::unique_ptr<MemTracker> _mem_tracker;
-    std::unique_ptr<MemPool> _mem_pool;
+    // This is a buffer, to hold the memory referenced by the rows that have not
+    // been inserted into the SkipList
+    std::unique_ptr<MemPool> _tmp_mem_pool;
+    std::unique_ptr<MemPool> _table_mem_pool;
     ObjectPool _agg_object_pool;
 
     typedef SkipList<char*, RowCursorComparator> Table;

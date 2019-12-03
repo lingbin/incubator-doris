@@ -44,13 +44,14 @@ private:
 
 public:
     // Create a new SkipList object that will use "cmp" for comparing keys,
-    // and will allocate memory using "*mem_pool".  Objects allocated in the mem_pool
-    // must remain allocated for the lifetime of the skiplist object.
-    explicit SkipList(Comparator cmp, MemPool* mem_pool);
+    // and will allocate memory using "*mem_pool".
+    // NOTE: Objects allocated in the mem_pool must remain allocated for
+    // the lifetime of the skiplist object.
+    explicit SkipList(Comparator cmp, MemPool* mem_pool, bool can_dup);
 
     // Insert key into the list.
     // REQUIRES: nothing that compares equal to key is currently in the list.
-    void Insert(const Key& key, bool* overwritten, KeysType keys_type);
+    void Insert(const Key& key, bool* overwritten);
     void Aggregate(const Key& k1, const Key& k2);
 
     // Returns true iff an entry that compares equal to key is in the list.
@@ -100,9 +101,11 @@ private:
 
     // Immutable after construction
     Comparator const compare_;
+    bool _can_dup;
     MemPool* const _mem_pool;    // MemPool used for allocations of nodes
 
     Node* const head_;
+    // When value is true, means indicates that duplicate values are allowed.
 
     // Modified only by Insert().  Read racily by readers, but stale
     // values are ok.
@@ -322,8 +325,9 @@ SkipList<Key,Comparator>::FindLast() const {
 }
 
 template<typename Key, class Comparator>
-SkipList<Key,Comparator>::SkipList(Comparator cmp, MemPool* mem_pool)
-    : compare_(cmp),
+SkipList<Key,Comparator>::SkipList(Comparator cmp, MemPool* mem_pool, bool can_dup) :
+    compare_(cmp),
+    _can_dup(can_dup),
     _mem_pool(mem_pool),
     head_(NewNode(0 /* any key will do */, kMaxHeight)),
     max_height_(1),
@@ -341,14 +345,15 @@ void SkipList<Key, Comparator>::Aggregate(const Key& k1, const Key& k2) {
 }
 
 template<typename Key, class Comparator>
-void SkipList<Key,Comparator>::Insert(const Key& key, bool* overwritten, KeysType keys_type) {
+void SkipList<Key,Comparator>::Insert(const Key& key, bool* overwritten) {
     // TODO(opt): We can use a barrier-free variant of FindGreaterOrEqual()
     // here since Insert() is externally synchronized.
     Node* prev[kMaxHeight];
     Node* x = FindGreaterOrEqual(key, prev);
 
 #ifndef BE_TEST
-    if (x != nullptr && keys_type != KeysType::DUP_KEYS && Equal(key, x->key)) {
+    // The key already exists and duplicate keys are not allowed, so we need to aggreage them
+    if (!_can_dup && x != nullptr && Equal(key, x->key)) {
         Aggregate(x->key, key);
         *overwritten = true;
         return;
