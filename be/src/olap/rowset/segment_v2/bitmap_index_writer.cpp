@@ -100,7 +100,7 @@ public:
         _rid += count;
     }
 
-    Status finish(WritableFile* file, BitmapIndexColumnPB* meta) override {
+    Status finish(fs::WritableBlock* wblock, BitmapIndexColumnPB* meta) override {
         meta->set_bitmap_type(BitmapIndexColumnPB::ROARING_BITMAP);
         meta->set_has_null(!_null_bitmap.isEmpty());
 
@@ -111,7 +111,7 @@ public:
             options.encoding = EncodingInfo::get_default_encoding(_typeinfo, true);
             options.compression = LZ4F;
 
-            IndexedColumnWriter dict_column_writer(options, _typeinfo, file);
+            IndexedColumnWriter dict_column_writer(options, _typeinfo, wblock);
             RETURN_IF_ERROR(dict_column_writer.init());
             for (auto const& it : _mem_index) {
                 RETURN_IF_ERROR(dict_column_writer.add(&(it.first)));
@@ -147,7 +147,7 @@ public:
             // we already store compressed bitmap, use NO_COMPRESSION to save some cpu
             options.compression = NO_COMPRESSION;
 
-            IndexedColumnWriter bitmap_column_writer(options, bitmap_typeinfo, file);
+            IndexedColumnWriter bitmap_column_writer(options, bitmap_typeinfo, wblock);
             RETURN_IF_ERROR(bitmap_column_writer.init());
 
             faststring buf;

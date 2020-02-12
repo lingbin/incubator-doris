@@ -29,6 +29,10 @@ namespace doris {
 class TypeInfo;
 class WritableFile;
 
+namespace fs {
+class WritableBlock;
+}
+
 namespace segment_v2 {
 
 class BitmapIndexWriter {
@@ -42,7 +46,7 @@ public:
 
     virtual void add_nulls(uint32_t count) = 0;
 
-    virtual Status finish(WritableFile* file, BitmapIndexColumnPB* meta) = 0;
+    virtual Status finish(fs::WritableBlock* file, BitmapIndexColumnPB* meta) = 0;
 
     virtual uint64_t size() const = 0;
 private:

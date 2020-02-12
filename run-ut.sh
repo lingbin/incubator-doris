@@ -268,28 +268,28 @@ ${DORIS_TEST_BINARY_DIR}/olap/olap_meta_test
 ${DORIS_TEST_BINARY_DIR}/olap/delta_writer_test
 ${DORIS_TEST_BINARY_DIR}/olap/decimal12_test
 ${DORIS_TEST_BINARY_DIR}/olap/olap_snapshot_converter_test
-${DORIS_TEST_BINARY_DIR}/olap/rowset/rowset_meta_manager_test
-${DORIS_TEST_BINARY_DIR}/olap/rowset/rowset_meta_test
-${DORIS_TEST_BINARY_DIR}/olap/rowset/alpha_rowset_test
-${DORIS_TEST_BINARY_DIR}/olap/rowset/beta_rowset_test
-${DORIS_TEST_BINARY_DIR}/olap/rowset/rowset_converter_test
-${DORIS_TEST_BINARY_DIR}/olap/rowset/segment_v2/encoding_info_test
-${DORIS_TEST_BINARY_DIR}/olap/rowset/segment_v2/ordinal_page_index_test
-${DORIS_TEST_BINARY_DIR}/olap/rowset/segment_v2/bitshuffle_page_test
-${DORIS_TEST_BINARY_DIR}/olap/rowset/segment_v2/plain_page_test
-${DORIS_TEST_BINARY_DIR}/olap/rowset/segment_v2/binary_plain_page_test
-${DORIS_TEST_BINARY_DIR}/olap/rowset/segment_v2/column_reader_writer_test
-${DORIS_TEST_BINARY_DIR}/olap/rowset/segment_v2/index_column_reader_writer_test
-${DORIS_TEST_BINARY_DIR}/olap/rowset/segment_v2/rle_page_test
-${DORIS_TEST_BINARY_DIR}/olap/rowset/segment_v2/binary_dict_page_test
-${DORIS_TEST_BINARY_DIR}/olap/rowset/segment_v2/binary_prefix_page_test
-${DORIS_TEST_BINARY_DIR}/olap/rowset/segment_v2/segment_test
-${DORIS_TEST_BINARY_DIR}/olap/rowset/segment_v2/page_compression_test
-${DORIS_TEST_BINARY_DIR}/olap/rowset/segment_v2/column_zone_map_test
-${DORIS_TEST_BINARY_DIR}/olap/rowset/segment_v2/row_ranges_test
-${DORIS_TEST_BINARY_DIR}/olap/rowset/segment_v2/frame_of_reference_page_test
-${DORIS_TEST_BINARY_DIR}/olap/rowset/segment_v2/block_bloom_filter_test
-${DORIS_TEST_BINARY_DIR}/olap/rowset/segment_v2/bloom_filter_index_reader_writer_test
+# ${DORIS_TEST_BINARY_DIR}/olap/rowset/rowset_meta_manager_test
+# ${DORIS_TEST_BINARY_DIR}/olap/rowset/rowset_meta_test
+# ${DORIS_TEST_BINARY_DIR}/olap/rowset/alpha_rowset_test
+# ${DORIS_TEST_BINARY_DIR}/olap/rowset/beta_rowset_test
+# ${DORIS_TEST_BINARY_DIR}/olap/rowset/rowset_converter_test
+# ${DORIS_TEST_BINARY_DIR}/olap/rowset/segment_v2/encoding_info_test
+# ${DORIS_TEST_BINARY_DIR}/olap/rowset/segment_v2/ordinal_page_index_test
+# ${DORIS_TEST_BINARY_DIR}/olap/rowset/segment_v2/bitshuffle_page_test
+# ${DORIS_TEST_BINARY_DIR}/olap/rowset/segment_v2/plain_page_test
+# ${DORIS_TEST_BINARY_DIR}/olap/rowset/segment_v2/binary_plain_page_test
+# ${DORIS_TEST_BINARY_DIR}/olap/rowset/segment_v2/column_reader_writer_test
+# ${DORIS_TEST_BINARY_DIR}/olap/rowset/segment_v2/index_column_reader_writer_test
+# ${DORIS_TEST_BINARY_DIR}/olap/rowset/segment_v2/rle_page_test
+# ${DORIS_TEST_BINARY_DIR}/olap/rowset/segment_v2/binary_dict_page_test
+# ${DORIS_TEST_BINARY_DIR}/olap/rowset/segment_v2/binary_prefix_page_test
+# ${DORIS_TEST_BINARY_DIR}/olap/rowset/segment_v2/segment_test
+# ${DORIS_TEST_BINARY_DIR}/olap/rowset/segment_v2/page_compression_test
+# ${DORIS_TEST_BINARY_DIR}/olap/rowset/segment_v2/column_zone_map_test
+# ${DORIS_TEST_BINARY_DIR}/olap/rowset/segment_v2/row_ranges_test
+# ${DORIS_TEST_BINARY_DIR}/olap/rowset/segment_v2/frame_of_reference_page_test
+# ${DORIS_TEST_BINARY_DIR}/olap/rowset/segment_v2/block_bloom_filter_test
+# ${DORIS_TEST_BINARY_DIR}/olap/rowset/segment_v2/bloom_filter_index_reader_writer_test
 ${DORIS_TEST_BINARY_DIR}/olap/txn_manager_test
 ${DORIS_TEST_BINARY_DIR}/olap/storage_types_test
 ${DORIS_TEST_BINARY_DIR}/olap/generic_iterators_test

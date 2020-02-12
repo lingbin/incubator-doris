@@ -242,6 +242,15 @@ set_target_properties(roaring PROPERTIES IMPORTED_LOCATION ${THIRDPARTY_DIR}/lib
 add_library(orc STATIC IMPORTED)
 set_target_properties(orc PROPERTIES IMPORTED_LOCATION ${THIRDPARTY_DIR}/lib/liborc.a)
 
+add_library(jsoncpp STATIC IMPORTED)
+set_target_properties(jsoncpp PROPERTIES IMPORTED_LOCATION ${THIRDPARTY_DIR}/lib/libjsoncpp.a)
+
+add_library(bossdk STATIC IMPORTED)
+set_target_properties(bossdk PROPERTIES IMPORTED_LOCATION ${THIRDPARTY_DIR}/lib/libbossdk.a)
+
+add_library(uuid STATIC IMPORTED)
+set_target_properties(uuid PROPERTIES IMPORTED_LOCATION ${THIRDPARTY_DIR}/lib/libuuid.a)
+
 find_program(THRIFT_COMPILER thrift ${CMAKE_SOURCE_DIR}/bin)
 
 # llvm-config
@@ -331,6 +340,13 @@ set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -Wall -Wno-sign-compare -Wno-unknown-p
 set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -fno-strict-aliasing -fno-omit-frame-pointer")
 set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -std=gnu++11 -D__STDC_FORMAT_MACROS")
 set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -Wno-deprecated -Wno-vla")
+### lingbin local add: 
+# set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -Wunreachable-code")
+# set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -Wextra")
+# set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -Wunused -Wunused-value -Wunused-but-set-parameter -Wunused-parameter -Wunused-but-set-variable")
+# set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -Wshadow")
+# set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -Winline ")
+
 set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -DBOOST_DATE_TIME_POSIX_TIME_STD_CONFIG")
 set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -DBOOST_SYSTEM_NO_DEPRECATED")
 if ("${CMAKE_BUILD_TARGET_ARCH}" STREQUAL "x86" OR "${CMAKE_BUILD_TARGET_ARCH}" STREQUAL "x86_64")
@@ -506,6 +522,7 @@ set(DORIS_LINK_LIBS
     Gutil
     Olap
     Rowset
+    OlapFs
     Runtime
     Service
     Udf
@@ -546,6 +563,9 @@ set(DORIS_DEPENDENCIES
     leveldb
     bitshuffle
     roaring
+    jsoncpp
+    uuid
+    bossdk
     double-conversion
     jemalloc
     brotlicommon
@@ -666,7 +686,7 @@ if (${MAKE_TEST} STREQUAL "ON")
     add_subdirectory(${TEST_DIR}/exprs)
     add_subdirectory(${TEST_DIR}/geo)
     add_subdirectory(${TEST_DIR}/http)
-    add_subdirectory(${TEST_DIR}/olap)
+    # add_subdirectory(${TEST_DIR}/olap)
     add_subdirectory(${TEST_DIR}/runtime)
     add_subdirectory(${TEST_DIR}/udf)
     add_subdirectory(${TEST_DIR}/util)

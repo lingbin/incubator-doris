@@ -35,10 +35,10 @@ class Field;
 class RowCursor {
 public:
     RowCursor();
-    
+
     // 遍历销毁field指针
     ~RowCursor();
-    
+
     // 根据传入schema的创建RowCursor
     OLAPStatus init(const TabletSchema& schema);
     OLAPStatus init(const std::vector<TabletColumn>& schema);
@@ -98,7 +98,7 @@ public:
 
     // 返回当前row cursor中列的个数
     size_t field_count() const {
-        return _schema->column_ids().size();
+        return _schema->num_column_ids();
     }
 
     // 以string格式输出rowcursor内容，仅供log及debug使用

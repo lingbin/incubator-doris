@@ -219,12 +219,12 @@ void BackendService::erase_export_task(TStatus& t_status, const TUniqueId& task_
 }
 
 void BackendService::get_tablet_stat(TTabletStatResult& result) {
-    StorageEngine::instance()->tablet_manager()->get_tablet_stat(result);
+    StorageEngine::instance()->tablet_manager()->get_tablet_stat(&result);
 }
 
 void BackendService::submit_routine_load_task(
         TStatus& t_status, const std::vector<TRoutineLoadTask>& tasks) {
-    
+
     for (auto& task : tasks) {
         Status st = _exec_env->routine_load_task_executor()->submit_task(task);
         if (!st.ok()) {
@@ -282,7 +282,7 @@ void BackendService::get_next(TScanBatchResult& result_, const TScanNextBatchPar
         // invalid offset
         t_status.status_code = TStatusCode::NOT_FOUND;
         std::stringstream msg;
-        msg << "context_id: " << context_id << " send offset: " << offset << "diff with context offset: " << context->offset; 
+        msg << "context_id: " << context_id << " send offset: " << offset << "diff with context offset: " << context->offset;
         t_status.error_msgs.push_back(msg.str());
         result_.status = t_status;
     } else {

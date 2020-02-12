@@ -33,6 +33,10 @@ class TypeInfo;
 class WritableFile;
 class BlockCompressionCodec;
 
+namespace fs {
+class WritableBlock;
+}
+
 namespace segment_v2 {
 
 struct ColumnWriterOptions {
@@ -63,7 +67,7 @@ public:
     ColumnWriter(const ColumnWriterOptions& opts,
                  std::unique_ptr<Field> field,
                  bool is_nullable,
-                 WritableFile* output_file);
+                 fs::WritableBlock* wblock);
     ~ColumnWriter();
 
     Status init();
@@ -148,7 +152,7 @@ private:
 private:
     ColumnWriterOptions _opts;
     bool _is_nullable;
-    WritableFile* _output_file = nullptr;
+    fs::WritableBlock* _wblock = nullptr;
 
     // cached generated pages,
     PageHead _pages;

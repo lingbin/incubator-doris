@@ -149,7 +149,7 @@ Status SnapshotLoader::upload(
             status = FileUtils::md5sum(src_path + "/" + local_file, &md5sum);
             if (!status.ok()) {
                 std::stringstream ss;
-                ss << "failed to get md5sum of file: " << local_file 
+                ss << "failed to get md5sum of file: " << local_file
                     << ": " << status.get_error_msg();
                 LOG(WARNING) << ss.str();
                 return Status::InternalError(ss.str());
@@ -429,7 +429,7 @@ Status SnapshotLoader::download(
                     if (eof) {
                         continue;
                     }
-                    
+
                     if (read_len > 0) {
                         ost = file_handler.pwrite(read_buf, read_len, write_offset);
                         if (ost != OLAP_SUCCESS) {
@@ -475,7 +475,7 @@ Status SnapshotLoader::download(
             if (!st.ok()) {
                 LOG(WARNING) << "failed to replace tablet id. unknown local file: " << st.get_error_msg()
                         << ". ignore it";
-                continue; 
+                continue;
             }
             VLOG(2) << "new file name after replace tablet id: " << new_name;
             const auto& find = remote_files.find(new_name);
@@ -505,7 +505,7 @@ Status SnapshotLoader::download(
 // to tablet_path
 // If overwrite, just replace the tablet_path with snapshot_path,
 // else: (TODO)
-// 
+//
 // MUST hold tablet's header lock, push lock, cumulative lock and base compaction lock
 Status SnapshotLoader::move(
     const std::string& snapshot_path,
@@ -585,6 +585,7 @@ Status SnapshotLoader::move(
             // This remove seems saft enough, because we already get
             // tablet id and schema hash from this path, which
             // means this path is a valid path.
+            boost::system::error_code errcode;
             boost::filesystem::remove_all(tablet_dir);
             VLOG(2) << "remove dir: " << tablet_dir;
             boost::filesystem::create_directory(tablet_dir);
@@ -611,7 +612,7 @@ Status SnapshotLoader::move(
                 for (auto& linked_file : linked_files) {
                     remove(linked_file.c_str());
                 }
-                
+
                 return Status::InternalError("move tablet failed");
             }
             linked_files.push_back(full_dest_path);
@@ -651,7 +652,7 @@ bool SnapshotLoader::_end_with(
 
 Status SnapshotLoader::_get_tablet_id_and_schema_hash_from_file_path(
         const std::string& src_path, int64_t* tablet_id, int32_t* schema_hash) {
-    // path should be like: /path/.../tablet_id/schema_hash  
+    // path should be like: /path/.../tablet_id/schema_hash
     // we try to extract tablet_id from path
     size_t pos = src_path.find_last_of("/");
     if (pos == std::string::npos || pos == src_path.length() - 1) {
@@ -877,7 +878,7 @@ Status SnapshotLoader::_replace_tablet_id(
 Status SnapshotLoader::_get_tablet_id_from_remote_path(
     const std::string& remote_path,
     int64_t* tablet_id) {
-    
+
     // eg:
     // bos://xxx/../__tbl_10004/__part_10003/__idx_10004/__10005
     size_t pos = remote_path.find_last_of("_");

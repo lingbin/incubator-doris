@@ -104,7 +104,7 @@ int main(int argc, char** argv) {
         exit(-1);
     }
 
-    string pid = std::to_string((long)getpid());
+    string pid = std::to_string((int64_t)getpid());
     pid += "\n";
     size_t length = write(fd, pid.c_str(), pid.size());
     if (length != pid.size()) {
