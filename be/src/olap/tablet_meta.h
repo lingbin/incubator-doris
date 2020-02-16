@@ -107,6 +107,13 @@ public:
                              uint32_t next_unique_id,
                              const std::unordered_map<uint32_t, uint32_t>& col_ordinal_to_unique_id,
                              TabletMetaSharedPtr* tablet_meta, TabletUid& tablet_uid);
+
+    static OLAPStatus create(const TCreateTabletReq& request,
+                             const TabletUid& tablet_uid,
+                             uint64_t shard_id,
+                             uint32_t next_unique_id,
+                             const std::unordered_map<uint32_t, uint32_t>& col_ordinal_to_unique_id,
+                             TabletMetaSharedPtr* tablet_meta);
     TabletMeta();
     TabletMeta(int64_t table_id, int64_t partition_id,
                int64_t tablet_id, int32_t schema_hash,

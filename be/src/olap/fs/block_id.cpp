@@ -15,43 +15,28 @@
 // specific language governing permissions and limitations
 // under the License.
 
-#pragma once
+#include "olap/fs/block_id.h"
 
-#include <cstddef>
-#include <memory>
+#include <string>
+#include <vector>
 
-#include "common/status.h"
-#include "gen_cpp/segment_v2.pb.h"
-#include "gutil/macros.h"
+#include "common/logging.h"
+#include "gutil/strings/join.h"
+
+using std::string;
+using std::vector;
 
 namespace doris {
 
-class TypeInfo;
-class WritableFile;
+const uint64_t BlockId::kInvalidId = 0;
 
-namespace fs {
-class WritableBlock;
+string BlockId::join_strings(const vector<BlockId>& blocks) {
+    vector<string> strings;
+    strings.reserve(blocks.size());
+    for (const BlockId& block : blocks) {
+        strings.push_back(block.to_string());
+    }
+    return ::JoinStrings(strings, ",");
 }
 
-namespace segment_v2 {
-
-class BitmapIndexWriter {
-public:
-    static Status create(const TypeInfo* typeinfo, std::unique_ptr<BitmapIndexWriter>* res);
-
-    BitmapIndexWriter() = default;
-    virtual ~BitmapIndexWriter() = default;
-
-    virtual void add_values(const void* values, size_t count) = 0;
-
-    virtual void add_nulls(uint32_t count) = 0;
-
-    virtual Status finish(fs::WritableBlock* file, BitmapIndexColumnPB* meta) = 0;
-
-    virtual uint64_t size() const = 0;
-private:
-    DISALLOW_COPY_AND_ASSIGN(BitmapIndexWriter);
-};
-
-} // segment_v2
-} // namespace doris
+} // namespace kudu

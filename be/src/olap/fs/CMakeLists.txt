@@ -16,13 +16,15 @@
 # under the License.
 
 # where to put generated libraries
-set(LIBRARY_OUTPUT_PATH "${BUILD_DIR}/src/env")
+set(LIBRARY_OUTPUT_PATH "${BUILD_DIR}/src/olap/fs")
 
 # where to put generated binaries
-set(EXECUTABLE_OUTPUT_PATH "${BUILD_DIR}/src/env")
+set(EXECUTABLE_OUTPUT_PATH "${BUILD_DIR}/src/olap/fs")
   
-add_library(Env STATIC
-    env_posix.cpp
-    env_util.cpp
-    # env_bos.cpp
+add_library(OlapFs STATIC
+    block_id.cpp
+    block_manager_metrics.cpp
+    block_manager.cpp
+    file_block_manager.cpp
+    # bos_block_manager.cpp
 )

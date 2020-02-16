@@ -15,43 +15,27 @@
 // specific language governing permissions and limitations
 // under the License.
 
-#pragma once
+#include "olap/fs/block_manager_metrics.h"
 
-#include <cstddef>
-#include <memory>
-
-#include "common/status.h"
-#include "gen_cpp/segment_v2.pb.h"
-#include "gutil/macros.h"
+#include "util/doris_metrics.h"
 
 namespace doris {
-
-class TypeInfo;
-class WritableFile;
-
 namespace fs {
-class WritableBlock;
+namespace internal {
+
+BlockManagerMetrics::BlockManagerMetrics() {
+    blocks_open_reading = &DorisMetrics::blocks_open_reading;
+    blocks_open_writing = &DorisMetrics::blocks_open_writing;
+
+    total_readable_blocks = &DorisMetrics::readable_blocks_total;
+    total_writable_blocks = &DorisMetrics::writable_blocks_total;
+    total_blocks_created = &DorisMetrics::blocks_created_total;
+    total_blocks_deleted = &DorisMetrics::blocks_deleted_total;
+    total_bytes_read = &DorisMetrics::bytes_read_total;
+    total_bytes_written = &DorisMetrics::bytes_written_total;
+    total_disk_sync = &DorisMetrics::disk_sync_total;
 }
 
-namespace segment_v2 {
-
-class BitmapIndexWriter {
-public:
-    static Status create(const TypeInfo* typeinfo, std::unique_ptr<BitmapIndexWriter>* res);
-
-    BitmapIndexWriter() = default;
-    virtual ~BitmapIndexWriter() = default;
-
-    virtual void add_values(const void* values, size_t count) = 0;
-
-    virtual void add_nulls(uint32_t count) = 0;
-
-    virtual Status finish(fs::WritableBlock* file, BitmapIndexColumnPB* meta) = 0;
-
-    virtual uint64_t size() const = 0;
-private:
-    DISALLOW_COPY_AND_ASSIGN(BitmapIndexWriter);
-};
-
-} // segment_v2
+} // namespace internal
+} // namespace fs
 } // namespace doris

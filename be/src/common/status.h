@@ -264,6 +264,16 @@ private:
             return ret_code;    \
         }   \
     } while (0);
-}
+
+// Return the given status if it is not OK, but first clone it and prepend the given message.
+#define RETURN_NOT_OK_PREPEND(s, msg)         \
+    do {                                      \
+        const Status& _s = (s);               \
+        if (UNLIKELY(!_s.ok())) {             \
+            return _s.clone_and_prepend(msg); \
+        }                                     \
+    } while (0)
+
+} // end namespace doris
 
 #define WARN_UNUSED_RESULT __attribute__((warn_unused_result))

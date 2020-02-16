@@ -20,6 +20,7 @@
 #include <string>
 
 #include "env/env.h"
+#include "olap/fs/block_manager.h"
 #include "olap/rowset/segment_v2/encoding_info.h"
 #include "olap/rowset/segment_v2/index_page.h"
 #include "olap/rowset/segment_v2/options.h"
@@ -37,10 +38,10 @@ namespace segment_v2 {
 
 IndexedColumnWriter::IndexedColumnWriter(const IndexedColumnWriterOptions& options,
                                          const TypeInfo* typeinfo,
-                                         WritableFile* output_file)
+                                         fs::WritableBlock* wblock)
         : _options(options),
           _typeinfo(typeinfo),
-          _file(output_file),
+          _wblock(wblock),
           _mem_tracker(-1),
           _mem_pool(&_mem_tracker),
           _num_values(0),
@@ -146,9 +147,9 @@ Status IndexedColumnWriter::_append_page(const std::vector<Slice>& page, PagePoi
     output_page.emplace_back(checksum_buf, sizeof(uint32_t));
 
     // append to file
-    pp->offset = _file->size();
-    RETURN_IF_ERROR(_file->appendv(&output_page[0], output_page.size()));
-    pp->size = _file->size() - pp->offset;
+    pp->offset = _wblock->bytes_appended();
+    RETURN_IF_ERROR(_wblock->appendv(&output_page[0], output_page.size()));
+    pp->size = _wblock->bytes_appended() - pp->offset;
     return Status::OK();
 }
 

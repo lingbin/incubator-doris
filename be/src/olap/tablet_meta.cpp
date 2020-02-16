@@ -63,9 +63,22 @@ OLAPStatus TabletMeta::create(int64_t table_id, int64_t partition_id,
                               const std::unordered_map<uint32_t, uint32_t>& col_ordinal_to_unique_id,
                               TabletMetaSharedPtr* tablet_meta, TabletUid& tablet_uid) {
     tablet_meta->reset(new TabletMeta(table_id, partition_id,
-                                tablet_id, schema_hash,
-                                shard_id, tablet_schema,
-                                next_unique_id, col_ordinal_to_unique_id, tablet_uid));
+                                      tablet_id, schema_hash,
+                                      shard_id, tablet_schema,
+                                      next_unique_id, col_ordinal_to_unique_id, tablet_uid));
+    return OLAP_SUCCESS;
+}
+
+OLAPStatus TabletMeta::create(const TCreateTabletReq& request,
+                              const TabletUid& tablet_uid,
+                              uint64_t shard_id,
+                              uint32_t next_unique_id,
+                              const std::unordered_map<uint32_t, uint32_t>& col_ordinal_to_unique_id,
+                              TabletMetaSharedPtr* tablet_meta) {
+    tablet_meta->reset(new TabletMeta(request.table_id, request.partition_id,
+                                      request.tablet_id, request.tablet_schema.schema_hash,
+                                      shard_id, request.tablet_schema,
+                                      next_unique_id, col_ordinal_to_unique_id, tablet_uid));
     return OLAP_SUCCESS;
 }
 

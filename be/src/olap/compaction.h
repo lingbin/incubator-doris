@@ -37,7 +37,7 @@ class Merger;
 
 // This class is a base class for compaction.
 // The entrance of this class is compact()
-// Any compaction should go through four procedures.
+// Any compaction should go through four steps.
 //  1. pick rowsets satisfied to compact
 //  2. do compaction
 //  3. modify rowsets

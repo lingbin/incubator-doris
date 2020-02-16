@@ -22,6 +22,7 @@
 #include "common/logging.h" // for LOG
 #include "env/env.h" // for LOG
 #include "gutil/strings/substitute.h" // for Substitute
+#include "olap/fs/block_manager.h"
 #include "olap/rowset/segment_v2/bitmap_index_writer.h"
 #include "olap/rowset/segment_v2/encoding_info.h" // for EncodingInfo
 #include "olap/rowset/segment_v2/options.h" // for PageBuilderOptions
@@ -74,10 +75,10 @@ private:
 ColumnWriter::ColumnWriter(const ColumnWriterOptions& opts,
                            std::unique_ptr<Field> field,
                            bool is_nullable,
-                           WritableFile* output_file)
+                           fs::WritableBlock* wblock)
         : _opts(opts),
         _is_nullable(is_nullable),
-        _output_file(output_file),
+        _wblock(wblock),
         _field(std::move(field)),
         _data_size(0) {
 }
@@ -268,14 +269,14 @@ Status ColumnWriter::write_bitmap_index() {
     if (!_opts.need_bitmap_index) {
         return Status::OK();
     }
-    return _bitmap_index_builder->finish(_output_file, &_bitmap_index_meta);
+    return _bitmap_index_builder->finish(_wblock, &_bitmap_index_meta);
 }
 
 Status ColumnWriter::write_bloom_filter_index() {
     if (!_opts.need_bloom_filter) {
         return Status::OK();
     }
-    return _bloom_filter_index_builder->finish(_output_file, &_bloom_filter_index_meta);
+    return _bloom_filter_index_builder->finish(_wblock, &_bloom_filter_index_meta);
 }
 
 void ColumnWriter::write_meta(ColumnMetaPB* meta) {
@@ -338,7 +339,7 @@ Status ColumnWriter::_write_physical_page(std::vector<Slice>* origin_data, PageP
     origin_data->emplace_back(checksum_buf, sizeof(uint32_t));
 
     // remember the offset
-    pp->offset = _output_file->size();
+    pp->offset = _wblock->bytes_appended();
     // write content to file
     size_t bytes_written = 0;
     RETURN_IF_ERROR(_write_raw_data(*origin_data, &bytes_written));
@@ -349,13 +350,13 @@ Status ColumnWriter::_write_physical_page(std::vector<Slice>* origin_data, PageP
 
 // write raw data into file, this is the only place to write data
 Status ColumnWriter::_write_raw_data(const std::vector<Slice>& data, size_t* bytes_written) {
-    auto file_size = _output_file->size();
-    auto st = _output_file->appendv(&data[0], data.size());
+    auto file_size = _wblock->bytes_appended();
+    auto st = _wblock->appendv(&data[0], data.size());
     if (!st.ok()) {
         LOG(WARNING) << "failed to append data to file, st=" << st.to_string();
         return st;
     }
-    *bytes_written = _output_file->size() - file_size;
+    *bytes_written = _wblock->bytes_appended() - file_size;
     _written_size += *bytes_written;
     return Status::OK();
 }
