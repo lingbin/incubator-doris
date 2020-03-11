@@ -327,6 +327,7 @@ TEST_F(BetaRowsetTest, BasicFunctionTest) {
 } // namespace doris
 
 int main(int argc, char **argv) {
+    doris::config::use_file_block = 1;
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }

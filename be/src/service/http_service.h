@@ -34,6 +34,7 @@ public:
     ~HttpService();
 
     Status start();
+
 private:
     ExecEnv* _env;
 

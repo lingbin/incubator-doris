@@ -40,12 +40,11 @@ namespace doris {
 // kafka related info
 class KafkaLoadInfo {
 public:
-    KafkaLoadInfo(const TKafkaLoadInfo& t_info):
-        brokers(t_info.brokers),
-        topic(t_info.topic),
-        begin_offset(t_info.partition_begin_offset),
-        properties(t_info.properties) {
-
+    KafkaLoadInfo(const TKafkaLoadInfo& t_info) :
+            brokers(t_info.brokers),
+            topic(t_info.topic),
+            begin_offset(t_info.partition_begin_offset),
+            properties(t_info.properties) {
         for (auto& p : t_info.partition_begin_offset) {
             cmt_offset[p.first] = p.second -1;
         }
@@ -81,9 +80,7 @@ class MessageBodySink;
 class StreamLoadContext {
 public:
     StreamLoadContext(ExecEnv* exec_env) :
-        id(UniqueId::gen_uid()),
-        _exec_env(exec_env),
-        _refs(0) {
+            id(UniqueId::gen_uid()), _exec_env(exec_env), _refs(0) {
         start_nanos = MonotonicNanos();
     }
 
@@ -119,11 +116,12 @@ public:
     // set to -1 if there is no job
     int64_t job_id = -1;
 
-    // id for each load
+    // id for each load job. It is a locally generated UUID.
     UniqueId id;
 
     std::string db;
     std::string table;
+    // If user does not provide, an UUID will be automatically generated.
     std::string label;
     // optional
     std::string sub_label;
@@ -145,8 +143,9 @@ public:
 
     bool need_rollback = false;
     // when use_streaming is true, we use stream_pipe to send source data,
-    // otherwise we save source data to file first, then process it.
+    // otherwise we save source data to local file first, then process it.
     bool use_streaming = false;
+
     TFileFormatType::type format = TFileFormatType::FORMAT_CSV_PLAIN;
 
     std::shared_ptr<MessageBodySink> body_sink;
@@ -168,7 +167,7 @@ public:
     int64_t start_nanos = 0;
     int64_t load_cost_nanos = 0;
     std::string error_url = "";
-    // if label already be used, set existing job's status here
+    // If label already be used, set existing job's status here.
     // should be RUNNING or FINISHED
     std::string existing_job_status = "";
 
@@ -186,4 +185,4 @@ private:
     std::atomic<int> _refs;
 };
 
-} // end namespace
+} // end namespace doris

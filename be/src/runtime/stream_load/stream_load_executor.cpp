@@ -110,7 +110,7 @@ Status StreamLoadExecutor::execute_plan_fragment(StreamLoadContext* ctx) {
     }
 #else
     ctx->promise.set_value(k_stream_load_plan_status);
-#endif
+#endif // BE_TEST
     return Status::OK();
 }
 
@@ -143,7 +143,7 @@ Status StreamLoadExecutor::begin_txn(StreamLoadContext* ctx) {
     Status status(result.status);
     if (!status.ok()) {
         LOG(WARNING) << "begin transaction failed, errmsg=" << status.get_error_msg()
-            << ctx->brief();
+                     << ctx->brief();
         if (result.__isset.job_status) {
             ctx->existing_job_status = result.job_status;
         }

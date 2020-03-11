@@ -40,8 +40,8 @@
 
 namespace doris {
 
-HttpService::HttpService(ExecEnv* env, int port, int num_threads)
-        : _env(env),
+HttpService::HttpService(ExecEnv* env, int port, int num_threads) :
+        _env(env),
         _ev_http_server(new EvHttpServer(port, num_threads)),
         _web_page_handler(new WebPageHandler(_ev_http_server.get())) {
 }
@@ -94,7 +94,9 @@ Status HttpService::start() {
     }
 
     MetaAction* meta_action = new MetaAction(HEADER);
-    _ev_http_server->register_handler(HttpMethod::GET, "/api/meta/header/{tablet_id}/{schema_hash}", meta_action);
+    _ev_http_server->register_handler(HttpMethod::GET,
+                                      "/api/meta/header/{tablet_id}/{schema_hash}",
+                                      meta_action);
 
 #ifndef BE_TEST
     // Register BE checksum action
@@ -106,7 +108,9 @@ Status HttpService::start() {
     _ev_http_server->register_handler(HttpMethod::GET, "/api/reload_tablet", reload_tablet_action);
 
     RestoreTabletAction* restore_tablet_action = new RestoreTabletAction(_env);
-    _ev_http_server->register_handler(HttpMethod::POST, "/api/restore_tablet", restore_tablet_action);
+    _ev_http_server->register_handler(HttpMethod::POST,
+                                      "/api/restore_tablet",
+                                      restore_tablet_action);
 
     // Register BE snapshot action
     SnapshotAction* snapshot_action = new SnapshotAction(_env);

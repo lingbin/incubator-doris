@@ -508,6 +508,9 @@ namespace config {
     // this is a self protection to avoid too many txns saving in manager
     CONF_Int64(max_runnings_transactions, "2000");
 
+    // TODO(lingbin): tmp, should remove later
+    CONF_Int64(use_file_block, "1");
+
 } // namespace config
 
 } // namespace doris

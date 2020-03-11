@@ -18,12 +18,10 @@
 #ifndef DORIS_BE_SRC_OLAP_FILE_HELPER_H
 #define DORIS_BE_SRC_OLAP_FILE_HELPER_H
 
-#include <stdio.h>
-#include <sys/stat.h>
- 
 #include <memory>
+#include <stdio.h>
 #include <string>
-#include <vector>
+#include <sys/stat.h>
 
 #include "olap/lru_cache.h"
 #include "olap/olap_common.h"
@@ -33,13 +31,13 @@
 
 namespace doris {
 
-typedef struct FileDescriptor {
+struct FileDescriptor {
     int fd;
     FileDescriptor(int fd) : fd(fd) {}
     ~FileDescriptor() {
         ::close(fd);
     }
-} FileDescriptor;
+};
 
 class FileHandler {
 public:
@@ -140,10 +138,10 @@ public:
             char errmsg[64];
             LOG(WARNING) << "fail to fsync file. [err= " << strerror_r(errno, errmsg, 64)
                          << " file_name='" << _file_name << "']";
-        } 
+        }
         return res;
     }
-    
+
     off_t tell() const {
         off_t res = -1;
         if (-1 == (res = ::ftell(_fp))) {
@@ -153,9 +151,9 @@ public:
         }
         return res;
     }
-    
+
     off_t length() const;
-    
+
     off_t seek(off_t offset, int whence) {
         off_t res = -1;
         if (-1 == (res = ::fseek(_fp, offset, whence))) {
@@ -168,7 +166,7 @@ public:
     }
 
     const std::string& file_name() { return _file_name; }
-    
+
     int fd() { return ::fileno(_fp); }
 
 private:
@@ -176,7 +174,7 @@ private:
     std::string _file_name;
 };
 
-typedef struct _FixedFileHeader {
+struct FixedFileHeader {
     // 整个文件的长度
     uint32_t file_length;
     // 文件除了FileHeader之外的内容的checkcum
@@ -185,9 +183,9 @@ typedef struct _FixedFileHeader {
     uint32_t protobuf_length;
     // Protobuf部分的checksum
     uint32_t protobuf_checksum;
-} __attribute__((packed)) FixedFileHeader;
+} __attribute__((packed));
 
-typedef struct _FixedFileHeaderV2 {
+struct FixedFileHeaderV2 {
     uint64_t magic_number;
     uint32_t version;
     // 整个文件的长度
@@ -198,9 +196,9 @@ typedef struct _FixedFileHeaderV2 {
     uint64_t protobuf_length;
     // Protobuf部分的checksum
     uint32_t protobuf_checksum;
-} __attribute__((packed)) FixedFileHeaderV2;
+} __attribute__((packed));
 
-template <typename MessageType, typename ExtraType = uint32_t, 
+template <typename MessageType, typename ExtraType = uint32_t,
           typename FileHandlerType = FileHandler>
 class FileHeader {
 public:
@@ -382,7 +380,7 @@ OLAPStatus FileHeader<MessageType, ExtraType, FileHandlerType>::unserialize(
 
     VLOG(3) << "fix head loaded. file_length=" << _fixed_file_header.file_length
             << ", checksum=" << _fixed_file_header.checksum
-            << ", protobuf_length=" << _fixed_file_header.protobuf_length 
+            << ", protobuf_length=" << _fixed_file_header.protobuf_length
             << ", magic_number=" << _fixed_file_header.magic_number
             << ", version=" << _fixed_file_header.version;
 

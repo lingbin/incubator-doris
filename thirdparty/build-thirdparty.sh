@@ -53,7 +53,7 @@ fi
 cd $TP_DIR
 
 # Download thirdparties.
-${TP_DIR}/download-thirdparty.sh
+# ${TP_DIR}/download-thirdparty.sh
 
 export LD_LIBRARY_PATH=$TP_DIR/installed/lib:$LD_LIBRARY_PATH
 
@@ -671,34 +671,62 @@ build_orc() {
     make -j$PARALLEL && make install
 }
 
-build_llvm
-build_libevent
-build_zlib
-build_lz4
-build_bzip
-build_lzo2
-build_openssl
-build_boost # must before thrift
-build_protobuf
-build_gflags
-build_gtest
-build_glog
-build_rapidjson
-build_snappy
-build_gperftools
-build_curl
-build_re2
-build_mysql
-build_thrift
-build_leveldb
-build_brpc
-build_rocksdb
-build_librdkafka
-build_flatbuffers
-build_arrow
-build_s2
-build_bitshuffle
-build_croaringbitmap
-build_orc
+build_bossdk() {
+    check_if_source_exist $BOSSDK_SOURCE
+    cd $TP_SOURCE_DIR/cppsdk
+
+    # compile and install thirdlib/json
+    cd thirdlib/json/
+    make VERBOSE=1 -j 8
+    make install
+
+    cd $TP_SOURCE_DIR/cppsdk
+    if [ ! -f configure ]; then
+        bash ./autogen.sh
+    fi
+    ./configure --prefix=${TP_INSTALL_DIR} 
+    make VERBOSE=1 -j$PARALLEL && make install
+}
+
+build_libuuid() {
+    check_if_source_exist $UUIDLIB_SOURCE
+    cd $TP_SOURCE_DIR/$UUIDLIB_SOURCE
+
+    # compile and install thirdlib/json
+    ./configure --prefix=${TP_INSTALL_DIR} 
+    make VERBOSE=1 -j$PARALLEL && make install
+}
+
+# build_llvm
+# build_libevent
+# build_zlib
+# build_lz4
+# build_bzip
+# build_lzo2
+# build_openssl
+# build_boost # must before thrift
+# build_protobuf
+# build_gflags
+# build_gtest
+# build_glog
+# build_rapidjson
+# build_snappy
+# build_gperftools
+# build_curl
+# build_re2
+# build_mysql
+# build_thrift
+# build_leveldb
+# build_brpc
+# build_rocksdb
+# build_librdkafka
+# build_flatbuffers
+# build_arrow
+# build_s2
+# build_bitshuffle
+# build_croaringbitmap
+# build_orc
+# build_bossdk
+build_libuuid
 
 echo "Finihsed to build all thirdparties"

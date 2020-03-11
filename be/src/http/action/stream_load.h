@@ -33,7 +33,7 @@ class StreamLoadContext;
 class StreamLoadAction : public HttpHandler {
 public:
     StreamLoadAction(ExecEnv* exec_env);
-    ~StreamLoadAction() override;
+    ~StreamLoadAction() override = default;
 
     void handle(HttpRequest *req) override;
 
@@ -47,7 +47,7 @@ public:
 private:
     Status _on_header(HttpRequest* http_req, StreamLoadContext* ctx);
     Status _handle(StreamLoadContext* ctx);
-    Status _data_saved_path(HttpRequest* req, std::string* file_path);
+    Status _gen_path_to_save_data(HttpRequest* req, std::string* file_path);
     Status _execute_plan_fragment(StreamLoadContext* ctx);
     Status _process_put(HttpRequest* http_req, StreamLoadContext* ctx);
 

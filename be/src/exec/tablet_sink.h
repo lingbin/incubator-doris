@@ -47,7 +47,7 @@ class ExprContext;
 class TExpr;
 
 namespace stream_load {
- 
+
 class OlapTableSink;
 
 class NodeChannel {
@@ -55,7 +55,7 @@ public:
     NodeChannel(OlapTableSink* parent, int64_t index_id, int64_t node_id, int32_t schema_hash);
     ~NodeChannel() noexcept;
 
-    // called before open, used to add tablet loacted in this backend
+    // called before open, used to add tablets loacted in this backend
     void add_tablet(const TTabletWithPartition& tablet) {
         _all_tablets.emplace_back(tablet);
     }
@@ -112,9 +112,8 @@ private:
 
 class IndexChannel {
 public:
-    IndexChannel(OlapTableSink* parent, int64_t index_id, int32_t schema_hash)
-            : _parent(parent), _index_id(index_id),
-            _schema_hash(schema_hash) {
+    IndexChannel(OlapTableSink* parent, int64_t index_id, int32_t schema_hash) :
+            _parent(parent), _index_id(index_id), _schema_hash(schema_hash) {
     }
     ~IndexChannel();
 

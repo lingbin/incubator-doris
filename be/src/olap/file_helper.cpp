@@ -20,14 +20,10 @@
 #include <stdio.h>
 #include <sys/stat.h>
 
-#include <string>
-#include <vector>
-
 #include <errno.h>
 
 #include "olap/olap_common.h"
 #include "olap/olap_define.h"
-#include "olap/utils.h"
 #include "util/debug_util.h"
 
 using std::string;
@@ -110,7 +106,7 @@ OLAPStatus FileHandler::open_with_cache(const string& file_name, int flag) {
                             key, file_desc, 1,
                             &_delete_cache_file_descriptor);
         VLOG(3) << "success to open file with cache. "
-                << "file_name=" << file_name 
+                << "file_name=" << file_name
                 << ", mode=" << flag << ", fd=" << _fd;
     }
     _is_using_cache = true;
@@ -230,7 +226,7 @@ OLAPStatus FileHandler::write(const void* buf, size_t buf_size) {
             return OLAP_ERR_IO_ERROR;
         }  else if (0 == wr_size) {
             char errmsg[64];
-            LOG(WARNING) << "write unenough to file. [err=" << strerror_r(errno, errmsg, 64) 
+            LOG(WARNING) << "write unenough to file. [err=" << strerror_r(errno, errmsg, 64)
                          << " file_name='" << _file_name << "' fd=" << _fd
                          << " size=" << buf_size << "]";
             return OLAP_ERR_IO_ERROR;

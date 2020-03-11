@@ -34,6 +34,8 @@
 #include "gen_cpp/FrontendService.h"
 #include "gen_cpp/FrontendService_types.h"
 #include "gen_cpp/HeartbeatService_types.h"
+#include "gutil/strings/numbers.h"
+#include "gutil/strings/substitute.h"
 #include "http/http_channel.h"
 #include "http/http_common.h"
 #include "http/http_request.h"
@@ -59,9 +61,9 @@
 
 namespace doris {
 
-IntCounter k_streaming_load_requests_total;
-IntCounter k_streaming_load_bytes;
-IntCounter k_streaming_load_duration_ms;
+static IntCounter k_streaming_load_requests_total;
+static IntCounter k_streaming_load_bytes;
+static IntCounter k_streaming_load_duration_ms;
 static IntGauge k_streaming_load_current_processing;
 
 #ifdef BE_TEST
@@ -86,17 +88,17 @@ static bool is_format_support_streaming(TFileFormatType::type format) {
 
 StreamLoadAction::StreamLoadAction(ExecEnv* exec_env) : _exec_env(exec_env) {
     DorisMetrics::metrics()->register_metric("streaming_load_requests_total",
-                                            &k_streaming_load_requests_total);
+                                             &k_streaming_load_requests_total);
     DorisMetrics::metrics()->register_metric("streaming_load_bytes",
-                                            &k_streaming_load_bytes);
+                                             &k_streaming_load_bytes);
     DorisMetrics::metrics()->register_metric("streaming_load_duration_ms",
-                                            &k_streaming_load_duration_ms);
+                                             &k_streaming_load_duration_ms);
     DorisMetrics::metrics()->register_metric("streaming_load_current_processing",
-                                            &k_streaming_load_current_processing);
+                                             &k_streaming_load_current_processing);
 }
 
-StreamLoadAction::~StreamLoadAction() {
-}
+// StreamLoadAction::~StreamLoadAction() {
+// }
 
 void StreamLoadAction::handle(HttpRequest* req) {
     StreamLoadContext* ctx = (StreamLoadContext*) req->handler_ctx();
@@ -136,15 +138,15 @@ void StreamLoadAction::handle(HttpRequest* req) {
 
 Status StreamLoadAction::_handle(StreamLoadContext* ctx) {
     if (ctx->body_bytes > 0 && ctx->receive_bytes != ctx->body_bytes) {
-        LOG(WARNING) << "recevie body don't equal with body bytes, body_bytes="
-            << ctx->body_bytes << ", receive_bytes=" << ctx->receive_bytes
-            << ", id=" << ctx->id;
+        LOG(WARNING) << "recevie body don't equal with body bytes."
+                     << " body_bytes=" << ctx->body_bytes
+                     << ", receive_bytes=" << ctx->receive_bytes
+                     << ", id=" << ctx->id;
         return Status::InternalError("receive body dont't equal with body bytes");
     }
     if (!ctx->use_streaming) {
         // if we use non-streaming, we need to close file first,
-        // then execute_plan_fragment here
-        // this will close file
+        // then execute_plan_fragment will can open the file for reading.
         ctx->body_sink.reset();
         RETURN_IF_ERROR(_exec_env->stream_load_executor()->execute_plan_fragment(ctx));
     } else {
@@ -187,7 +189,7 @@ int StreamLoadAction::on_header(HttpRequest* req) {
             _exec_env->stream_load_executor()->rollback_txn(ctx);
             ctx->need_rollback = false;
         }
-        if (ctx->body_sink.get() != nullptr) {
+        if (ctx->body_sink != nullptr) {
             ctx->body_sink->cancel();
         }
         auto str = ctx->to_json();
@@ -204,50 +206,59 @@ Status StreamLoadAction::_on_header(HttpRequest* http_req, StreamLoadContext* ct
         LOG(WARNING) << "parse basic authorization failed." << ctx->brief();
         return Status::InternalError("no valid Basic authorization");
     }
+
     // check content length
     ctx->body_bytes = 0;
-    size_t max_body_bytes = config::streaming_load_max_mb * 1024 * 1024;
-    if (!http_req->header(HttpHeaders::CONTENT_LENGTH).empty()) {
-        ctx->body_bytes = std::stol(http_req->header(HttpHeaders::CONTENT_LENGTH));
-        if (ctx->body_bytes > max_body_bytes) {
-            LOG(WARNING) << "body exceed max size." << ctx->brief();
-
-            std::stringstream ss;
-            ss << "body exceed max size, max_body_bytes=" << max_body_bytes;
-            return Status::InternalError(ss.str());
+    size_t max_body_bytes = config::streaming_load_max_mb << 20; // MB => byte
+    const std::string& header_content_length = http_req->header(HttpHeaders::CONTENT_LENGTH);
+    if (!header_content_length.empty()) {
+        if (safe_strtou64(header_content_length, &ctx->body_bytes)) {
+            if (ctx->body_bytes > max_body_bytes) {
+                LOG(WARNING) << "body exceed max size." << ctx->brief();
+                return Status::InternalError(strings::Substitute(
+                        "body exceed max size, max_body_bytes=$0", max_body_bytes));
+            }
         }
-    } else {
 #ifndef BE_TEST
+    } else {
         evhttp_connection_set_max_body_size(
-            evhttp_request_get_connection(http_req->get_evhttp_request()),
-            max_body_bytes);
+                evhttp_request_get_connection(http_req->get_evhttp_request()),
+                max_body_bytes);
 #endif
     }
+
     // get format of this put
-    if (http_req->header(HTTP_FORMAT_KEY).empty()) {
-        ctx->format = TFileFormatType::FORMAT_CSV_PLAIN;
-    } else {
-        ctx->format = parse_format(http_req->header(HTTP_FORMAT_KEY));
+    ctx->format = TFileFormatType::FORMAT_CSV_PLAIN;
+    const std::string& header_format_key = http_req->header(HTTP_FORMAT_KEY);
+    if (!header_format_key.empty()) {
+        ctx->format = parse_format(header_format_key);
         if (ctx->format == TFileFormatType::FORMAT_UNKNOWN) {
             LOG(WARNING) << "unknown data format." << ctx->brief();
-            std::stringstream ss;
-            ss << "unknown data format, format=" << http_req->header(HTTP_FORMAT_KEY);
-            return Status::InternalError(ss.str());
+            return Status::InternalError(strings::Substitute(
+                        "unknown data format, format=$0", header_format_key));
         }
     }
 
-    if (!http_req->header(HTTP_TIMEOUT).empty()) {
-        try {
-            ctx->timeout_second = std::stoi(http_req->header(HTTP_TIMEOUT));
-        } catch (const std::invalid_argument& e) {
-            return Status::InvalidArgument("Invalid timeout format");
+    ctx->timeout_second = -1;
+    const std::string& header_timeout_second = http_req->header(HTTP_TIMEOUT);
+    if (!header_timeout_second.empty()) {
+        if (!safe_strto32(header_timeout_second, &ctx->timeout_second)) {
+            return Status::InvalidArgument(strings::Substitute(
+                    "Invalid timeout format. timeout=$0", header_timeout_second));
         }
     }
 
-    // begin transaction
+    ctx->max_filter_ratio = 0.0;
+    const std::string& header_max_filter_ratio = http_req->header(HTTP_MAX_FILTER_RATIO);
+    if (!header_max_filter_ratio.empty()) {
+        if (!safe_strtod(header_max_filter_ratio, &ctx->max_filter_ratio)) {
+            return Status::InvalidArgument(strings::Substitute(
+                    "Invalid max_filter_ratio format. value=$0", header_max_filter_ratio));
+        }
+    }
+
     RETURN_IF_ERROR(_exec_env->stream_load_executor()->begin_txn(ctx));
 
-    // process put file
     return _process_put(http_req, ctx);
 }
 
@@ -295,6 +306,7 @@ Status StreamLoadAction::_process_put(HttpRequest* http_req, StreamLoadContext* 
     ctx->use_streaming = is_format_support_streaming(ctx->format);
 
     // put request
+    // TODO(lingbin): we should reuse this TStreamLoadPutRequest object. make it thread-local?
     TStreamLoadPutRequest request;
     set_request_auth(&request, ctx->auth);
     request.db = ctx->db;
@@ -308,13 +320,14 @@ Status StreamLoadAction::_process_put(HttpRequest* http_req, StreamLoadContext* 
         request.fileType = TFileType::FILE_STREAM;
         ctx->body_sink = pipe;
     } else {
-        RETURN_IF_ERROR(_data_saved_path(http_req, &request.path));
+        RETURN_IF_ERROR(_gen_path_to_save_data(http_req, &request.path));
+        request.__isset.path = true;
         auto file_sink = std::make_shared<MessageBodyFileSink>(request.path);
         RETURN_IF_ERROR(file_sink->open());
-        request.__isset.path = true;
         request.fileType = TFileType::FILE_LOCAL;
         ctx->body_sink = file_sink;
     }
+
     if (!http_req->header(HTTP_COLUMNS).empty()) {
         request.__set_columns(http_req->header(HTTP_COLUMNS));
     }
@@ -344,25 +357,23 @@ Status StreamLoadAction::_process_put(HttpRequest* http_req, StreamLoadContext* 
     if (!http_req->header(HTTP_TIMEZONE).empty()) {
         request.__set_timezone(http_req->header(HTTP_TIMEZONE));
     }
-    if (!http_req->header(HTTP_EXEC_MEM_LIMIT).empty()) {
-        try {
-            request.__set_execMemLimit(std::stoll(http_req->header(HTTP_EXEC_MEM_LIMIT)));
-        } catch (const std::invalid_argument& e) {
-            return Status::InvalidArgument("Invalid mem limit format");
+    const std::string& header_exec_mem_limit = http_req->header(HTTP_EXEC_MEM_LIMIT);
+    if (!header_exec_mem_limit.empty()) {
+        int64_t exec_mem_limit = 0;
+        if (!safe_strto64(header_exec_mem_limit, &exec_mem_limit)) {
+            return Status::InvalidArgument(strings::Substitute(
+                        "Invalid mem limit format. exec_mem_limit=$0", header_exec_mem_limit));
         }
+        request.__set_execMemLimit(exec_mem_limit);
     }
 
     if (ctx->timeout_second != -1) {
         request.__set_timeout(ctx->timeout_second);
     }
 
+#ifndef BE_TEST
     // plan this load
     TNetworkAddress master_addr = _exec_env->master_info()->network_address;
-#ifndef BE_TEST
-    if (!http_req->header(HTTP_MAX_FILTER_RATIO).empty()) {
-        ctx->max_filter_ratio = strtod(http_req->header(HTTP_MAX_FILTER_RATIO).c_str(), nullptr);
-    }
-
     RETURN_IF_ERROR(ThriftRpcHelper::rpc<FrontendServiceClient>(
             master_addr.hostname, master_addr.port,
             [&request, ctx] (FrontendServiceConnection& client) {
@@ -371,22 +382,23 @@ Status StreamLoadAction::_process_put(HttpRequest* http_req, StreamLoadContext* 
 #else
     ctx->put_result = k_stream_load_put_result;
 #endif
+
     Status plan_status(ctx->put_result.status);
     if (!plan_status.ok()) {
         LOG(WARNING) << "plan streaming load failed. errmsg=" << plan_status.get_error_msg()
-                << ctx->brief();
+                     << ctx->brief();
         return plan_status;
     }
     VLOG(3) << "params is " << apache::thrift::ThriftDebugString(ctx->put_result.params);
-    // if we not use streaming, we must download total content before we begin
-    // to process this load
+    // If we are not use streaming mode, we must download total file to local disk
+    // before we execute the plan.
     if (!ctx->use_streaming) {
         return Status::OK();
     }
     return _exec_env->stream_load_executor()->execute_plan_fragment(ctx);
 }
 
-Status StreamLoadAction::_data_saved_path(HttpRequest* req, std::string* file_path) {
+Status StreamLoadAction::_gen_path_to_save_data(HttpRequest* req, std::string* file_path) {
     std::string prefix;
     RETURN_IF_ERROR(_exec_env->load_path_mgr()->allocate_dir(req->param(HTTP_DB_KEY), "", &prefix));
     timeval tv;
@@ -402,5 +414,5 @@ Status StreamLoadAction::_data_saved_path(HttpRequest* req, std::string* file_pa
     return Status::OK();
 }
 
-}
+} // namespace doris
 

@@ -55,11 +55,10 @@ AgentServer::AgentServer(ExecEnv* exec_env, const TMasterInfo& master_info) :
     // to make code to be more readable.
 
 #ifndef BE_TEST
-#define CREATE_AND_START_POOL(type, pool_name)         \
-    pool_name.reset(new TaskWorkerPool(                \
-                TaskWorkerPool::TaskWorkerType::type,  \
-                _exec_env,                             \
-                master_info));                         \
+#define CREATE_AND_START_POOL(type, pool_name)                                \
+    pool_name.reset(new TaskWorkerPool(TaskWorkerPool::TaskWorkerType::type,  \
+                                       _exec_env,                             \
+                                       master_info));                         \
     pool_name->start();
 #else
 #define CREATE_AND_START_POOL(type, pool_name)
@@ -100,9 +99,8 @@ AgentServer::~AgentServer() { }
 
 // TODO(lingbin): each task in the batch may have it own status or FE must check and
 // resend request when something is wrong(BE may need some logic to guarantee idempotence.
-void AgentServer::submit_tasks(TAgentResult& agent_result, const vector<TAgentTaskRequest>& tasks) {
-    Status ret_st;
-
+void AgentServer::submit_tasks(TAgentResult& agent_result,
+                               const vector<TAgentTaskRequest>& tasks) {
     // TODO check master_info here if it is the same with that of heartbeat rpc
     if (_master_info.network_address.hostname == "" || _master_info.network_address.port == 0) {
         Status ret_st = Status::Cancelled("Have not get FE Master heartbeat yet");
@@ -110,6 +108,7 @@ void AgentServer::submit_tasks(TAgentResult& agent_result, const vector<TAgentTa
         return;
     }
 
+    Status ret_st;
     for (auto task : tasks) {
         VLOG_RPC << "submit one task: " << apache::thrift::ThriftDebugString(task).c_str();
         TTaskType::type task_type = task.task_type;

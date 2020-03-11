@@ -231,6 +231,15 @@ set_target_properties(roaring PROPERTIES IMPORTED_LOCATION ${THIRDPARTY_DIR}/lib
 add_library(orc STATIC IMPORTED)
 set_target_properties(orc PROPERTIES IMPORTED_LOCATION ${THIRDPARTY_DIR}/lib/liborc.a)
 
+add_library(jsoncpp STATIC IMPORTED)
+set_target_properties(jsoncpp PROPERTIES IMPORTED_LOCATION ${THIRDPARTY_DIR}/lib/libjsoncpp.a)
+
+add_library(bossdk STATIC IMPORTED)
+set_target_properties(bossdk PROPERTIES IMPORTED_LOCATION ${THIRDPARTY_DIR}/lib/libbossdk.a)
+
+add_library(uuid STATIC IMPORTED)
+set_target_properties(uuid PROPERTIES IMPORTED_LOCATION ${THIRDPARTY_DIR}/lib/libuuid.a)
+
 find_program(THRIFT_COMPILER thrift ${CMAKE_SOURCE_DIR}/bin)
 
 # Check if functions are supported in this platform. All flags will generated
@@ -402,6 +411,9 @@ set(DORIS_DEPENDENCIES
     leveldb
     bitshuffle
     roaring
+    jsoncpp
+    uuid
+    bossdk
     double-conversion
     jemalloc
     brotlicommon
